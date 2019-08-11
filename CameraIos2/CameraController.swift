@@ -43,6 +43,27 @@ extension CameraController: AVCapturePhotoCaptureDelegate {
         }
     }
     
+    func prepare(completionHandler: @escaping (Error?) -> Void) {
+        
+        DispatchQueue(label: "prepare").async {
+            do {
+                self.createCaptureSession()
+                try self.configureCaptureDevices()
+                try self.configureDeviceInputs()
+                try self.configurePhotoOutput()
+            }catch {
+                DispatchQueue.main.async {
+                    completionHandler(error)
+                }
+                return
+            }
+            
+            DispatchQueue.main.async {
+                completionHandler(nil)
+            }
+        }
+    }
+    
     func createCaptureSession() {
         self.captureSession = AVCaptureSession()
     }
@@ -103,30 +124,6 @@ extension CameraController: AVCapturePhotoCaptureDelegate {
         }
         
         captureSession.startRunning()
-    }
-    
-    func prepare(completionHandler: @escaping (Error?) -> Void) {
-        
-        DispatchQueue(label: "prepare").async {
-            do {
-                self.createCaptureSession()
-                try self.configureCaptureDevices()
-                try self.configureDeviceInputs()
-                try self.configurePhotoOutput()
-            }
-                
-            catch {
-                DispatchQueue.main.async {
-                    completionHandler(error)
-                }
-                
-                return
-            }
-            
-            DispatchQueue.main.async {
-                completionHandler(nil)
-            }
-        }
     }
     
     func displayPreview(on view: UIView) throws {

@@ -51,7 +51,6 @@
                                             <constraint firstAttribute="height" constant="55" id="BWc-RS-E4t"/>
                                             <constraint firstAttribute="width" constant="55" id="RdN-6U-T5F"/>
                                         </constraints>
-                                        <state key="normal" image="Photo Camera Icon"/>
                                         <connections>
                                             <action selector="takePicture:" destination="BYZ-38-t0r" eventType="touchUpInside" id="OH4-uP-Cj3"/>
                                         </connections>
@@ -91,7 +90,6 @@
     </scenes>
     <resources>
         <image name="Flash Off Icon" width="24" height="24"/>
-        <image name="Photo Camera Icon" width="24" height="24"/>
         <image name="Rear Camera Icon" width="24" height="24"/>
     </resources>
 </document>
