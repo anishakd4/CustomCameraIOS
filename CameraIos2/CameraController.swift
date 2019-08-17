@@ -9,6 +9,10 @@
 import UIKit
 import AVFoundation
 
+protocol CameraControllerDelegate: class {
+    func captured(image: UIImage)
+}
+
 class CameraController: NSObject {
     
     var captureSession: AVCaptureSession?
@@ -17,10 +21,12 @@ class CameraController: NSObject {
     var rearCamera: AVCaptureDevice?
     
     var currentCameraPosition: CameraPosition?
+    
     var frontCameraInput: AVCaptureDeviceInput?
     var rearCameraInput: AVCaptureDeviceInput?
     
-    var photoOutput: AVCapturePhotoOutput?
+    //var photoOutput: AVCapturePhotoOutput?
+    let videoOutput = AVCaptureVideoDataOutput()
     
     var previewLayer: AVCaptureVideoPreviewLayer?
     
@@ -28,20 +34,15 @@ class CameraController: NSObject {
     
     var photoCaptureCompletionBlock: ((UIImage?, Error?) -> Void)?
     
+    //    let wrapper = DlibWrapper()
+    
+    private let context = CIContext()
+    weak var delegate: CameraControllerDelegate?
+    private let position = AVCaptureDevice.Position.front
+    
 }
 
-extension CameraController: AVCapturePhotoCaptureDelegate {
-    
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        if let error = error {
-            self.photoCaptureCompletionBlock?(nil, error)
-        }else if let data = photo.fileDataRepresentation(),
-            let image = UIImage(data: data) {
-            self.photoCaptureCompletionBlock?(image, nil)
-        }else {
-            self.photoCaptureCompletionBlock?(nil, CameraControllerError.unknown)
-        }
-    }
+extension CameraController: AVCapturePhotoCaptureDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
     
     func prepare(completionHandler: @escaping (Error?) -> Void) {
         
@@ -93,13 +94,7 @@ extension CameraController: AVCapturePhotoCaptureDelegate {
     func configureDeviceInputs() throws {
         guard let captureSession = self.captureSession else { throw CameraControllerError.captureSessionIsMissing }
         
-        if let rearCamera = self.rearCamera {
-            self.rearCameraInput = try AVCaptureDeviceInput(device: rearCamera)
-            if captureSession.canAddInput(self.rearCameraInput!) {
-                captureSession.addInput(self.rearCameraInput!)
-            }
-            self.currentCameraPosition = .rear
-        } else if let frontCamera = self.frontCamera {
+         if let frontCamera = self.frontCamera {
             self.frontCameraInput = try AVCaptureDeviceInput(device: frontCamera)
             if captureSession.canAddInput(self.frontCameraInput!) {
                 captureSession.addInput(self.frontCameraInput!)
@@ -107,7 +102,13 @@ extension CameraController: AVCapturePhotoCaptureDelegate {
                 throw CameraControllerError.inputsAreInvalid
             }
             self.currentCameraPosition = .front
-        }else {
+        }else if let rearCamera = self.rearCamera {
+            self.rearCameraInput = try AVCaptureDeviceInput(device: rearCamera)
+            if captureSession.canAddInput(self.rearCameraInput!) {
+                captureSession.addInput(self.rearCameraInput!)
+            }
+            self.currentCameraPosition = .rear
+        } else {
             throw CameraControllerError.noCamerasAvailable
         }
         
@@ -116,12 +117,24 @@ extension CameraController: AVCapturePhotoCaptureDelegate {
     func configurePhotoOutput() throws {
         guard let captureSession = self.captureSession else { throw CameraControllerError.captureSessionIsMissing }
         
-        self.photoOutput = AVCapturePhotoOutput()
-        self.photoOutput!.setPreparedPhotoSettingsArray([AVCapturePhotoSettings(format: [AVVideoCodecKey : AVVideoCodecType.jpeg])], completionHandler: nil)
+//        self.photoOutput = AVCapturePhotoOutput()
+//        self.photoOutput!.setPreparedPhotoSettingsArray([AVCapturePhotoSettings(format: [AVVideoCodecKey : AVVideoCodecType.jpeg])], completionHandler: nil)
+//
+//        if captureSession.canAddOutput(self.photoOutput!) {
+//            captureSession.addOutput(self.photoOutput!)
+//        }
         
-        if captureSession.canAddOutput(self.photoOutput!) {
-            captureSession.addOutput(self.photoOutput!)
-        }
+        videoOutput.videoSettings = [(kCVPixelBufferPixelFormatTypeKey as NSString) : NSNumber(value: kCVPixelFormatType_32BGRA)] as [String : Any]
+        videoOutput.alwaysDiscardsLateVideoFrames = true
+        videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "sample buffer"))
+        guard captureSession.canAddOutput(videoOutput) else { return }
+        captureSession.addOutput(videoOutput)
+        
+        guard let connection = videoOutput.connection(with: AVFoundation.AVMediaType.video) else { return }
+        guard connection.isVideoOrientationSupported else { return }
+        guard connection.isVideoMirroringSupported else { return }
+        connection.videoOrientation = .portrait
+        connection.isVideoMirrored = position == .front
         
         captureSession.startRunning()
     }
@@ -205,8 +218,36 @@ extension CameraController: AVCapturePhotoCaptureDelegate {
         let settings = AVCapturePhotoSettings()
         settings.flashMode = self.flashMode
         
-        self.photoOutput?.capturePhoto(with: settings, delegate: self)
+        //self.photoOutput?.capturePhoto(with: settings, delegate: self)
         self.photoCaptureCompletionBlock = completion
+    }
+    
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        if let error = error {
+            self.photoCaptureCompletionBlock?(nil, error)
+        }else if let data = photo.fileDataRepresentation(),
+            let image = UIImage(data: data) {
+            self.photoCaptureCompletionBlock?(image, nil)
+        }else {
+            self.photoCaptureCompletionBlock?(nil, CameraControllerError.unknown)
+        }
+    }
+    
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        //wrapper.doWork(on: sampleBuffer)
+        //print("enter 1")
+        guard let uiImage = imageFromSampleBuffer(sampleBuffer: sampleBuffer) else { return }
+        //print("enter 2")
+        DispatchQueue.main.async { [unowned self] in
+            self.delegate?.captured(image: uiImage)
+        }
+    }
+    
+    private func imageFromSampleBuffer(sampleBuffer: CMSampleBuffer) -> UIImage? {
+        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return nil }
+        let ciImage = CIImage(cvPixelBuffer: imageBuffer)
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return nil }
+        return UIImage(cgImage: cgImage)
     }
     
 }

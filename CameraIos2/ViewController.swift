@@ -15,6 +15,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var switchCameraButton: UIButton!
     @IBOutlet weak var previewView: UIView!
     @IBOutlet weak var capturePhotoButton: UIButton!
+    @IBOutlet weak var myImageView: UIImageView!
     
     let cameraController = CameraController()
     
@@ -66,6 +67,7 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        cameraController.delegate = self
         styleCaptureButton()
         configureCameraController()
     }
@@ -87,5 +89,15 @@ class ViewController: UIViewController {
     }
 
 
+}
+
+extension ViewController: CameraControllerDelegate{
+    func captured(image: UIImage) {
+        //print("captured")
+        
+        //let imageFinal = wrapper.doWork(on: image)
+        
+        myImageView.image = image
+    }
 }
 

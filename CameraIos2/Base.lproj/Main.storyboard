@@ -55,12 +55,21 @@
                                             <action selector="takePicture:" destination="BYZ-38-t0r" eventType="touchUpInside" id="OH4-uP-Cj3"/>
                                         </connections>
                                     </button>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="FWK-FD-b0h">
+                                        <rect key="frame" x="67.5" y="203.5" width="240" height="240"/>
+                                        <constraints>
+                                            <constraint firstAttribute="height" constant="240" id="2Rx-Si-1ri"/>
+                                            <constraint firstAttribute="width" constant="240" id="Wht-7b-etH"/>
+                                        </constraints>
+                                    </imageView>
                                 </subviews>
                                 <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
                                     <constraint firstAttribute="trailing" secondItem="8Xt-o0-inf" secondAttribute="trailing" constant="16" id="4dr-a4-tGR"/>
+                                    <constraint firstItem="FWK-FD-b0h" firstAttribute="centerX" secondItem="IbE-s0-X4C" secondAttribute="centerX" id="9ZL-ts-pDi"/>
                                     <constraint firstItem="m2C-Zb-ftW" firstAttribute="top" secondItem="8Xt-o0-inf" secondAttribute="bottom" constant="16" id="HSS-Ri-jkg"/>
                                     <constraint firstItem="8Xt-o0-inf" firstAttribute="top" secondItem="IbE-s0-X4C" secondAttribute="top" constant="16" id="N4u-T6-B4l"/>
+                                    <constraint firstItem="FWK-FD-b0h" firstAttribute="centerY" secondItem="IbE-s0-X4C" secondAttribute="centerY" id="OcB-Td-PVH"/>
                                     <constraint firstItem="5eo-ku-JB5" firstAttribute="centerX" secondItem="IbE-s0-X4C" secondAttribute="centerX" id="ZEn-dj-3wX"/>
                                     <constraint firstAttribute="bottom" secondItem="5eo-ku-JB5" secondAttribute="bottom" constant="16" id="g1z-z5-X9U"/>
                                     <constraint firstAttribute="trailing" secondItem="m2C-Zb-ftW" secondAttribute="trailing" constant="16" id="zgf-6u-CrJ"/>
@@ -78,6 +87,7 @@
                     </view>
                     <connections>
                         <outlet property="capturePhotoButton" destination="5eo-ku-JB5" id="HS4-wB-zO5"/>
+                        <outlet property="myImageView" destination="FWK-FD-b0h" id="gcG-lI-Kt0"/>
                         <outlet property="previewView" destination="IbE-s0-X4C" id="DQs-iw-F2g"/>
                         <outlet property="switchCameraButton" destination="m2C-Zb-ftW" id="pxV-5c-9BK"/>
                         <outlet property="toggleFlashButton" destination="8Xt-o0-inf" id="dO8-aZ-HsI"/>
